@@ -1,0 +1,21 @@
+html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: gray;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+}
+
+#Main {
+    width: 100%;
+    height: 100%;
+}
+
+#Main #RotateBox {
+    width: 100%;
+    height: 100%;
+}
