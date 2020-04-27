@@ -25,18 +25,6 @@ async function forwardBackward(value) {
     } catch (e) {}
 }
 
-async function hold() {
-    try {
-        await fetch(`${endpoint}?${eKeep}:${2850}`);
-    } catch (e) {}
-}
-
-async function release() {
-    try {
-        await fetch(`${endpoint}?${eKeep}:${2000}`);
-    } catch (e) {}
-}
-
 function getValueFromRange(current, max) {
     const step = max / WIDTH;
     return Math.trunc(current / step + COUNT_LOW);
@@ -53,13 +41,30 @@ function getBounds() {
     };
 }
 
+function getStartParameters() {
+    return {
+        rotate: COUNT_LOW,
+        up: COUNT_LOW,
+        forward: COUNT_LOW,
+        hold: 2000
+    }
+}
+
+async function set(engines) {
+    try {
+        await fetch(`${endpoint}?${eRotate}:${engines.rotate}&${eUpDown}:${engines.up}&${eForwardBackward}:${engines.forward}&${eKeep}:${engines.hold}`);
+    } catch (e) {}
+}
+
 export default {
     rotate,
     upDown,
     forwardBackward,
-    hold,
-    release,
     getValueFromRange,
     inverse,
-    getBounds
+    getBounds,
+    getStartParameters,
+    set,
+    hold: 2850,
+    release: 2000
 }
