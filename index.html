@@ -8,7 +8,48 @@
 </head>
 <body>
     <div id="Main">
-        <div id="RotateBox"></div>
+        <div id="RotateBox">
+            <div class="console">
+                <div class="inputs">
+                    <label>
+                        horz:
+                        <input class="horz" type="number" step="1" min="0" max="180"/>
+                    </label>
+                    <label>
+                        vert:
+                        <input class="vert" type="number" step="1" min="0" max="180"/>
+                    </label>
+                    <label>
+                        fwd:
+                        <input class="fwd" type="number" step="1" min="0" max="180"/>
+                    </label>
+
+                </div>
+                <div class="controls">
+                    <div class="buttons">
+                        <div>
+                            <button class="left">Left</button>
+                        </div>
+                        <div>
+                            <button class="top vert">Top Vert</button>
+                            <button class="center">Center</button>
+                            <button class="bottom">Bottom</button>
+                        </div>
+                        <div>
+                            <button class="right">Right</button>
+                        </div>
+                    </div>
+                    <div class="buttons">
+                        <div>
+                            <button class="top horz">Top Horz</button>
+                            <button class="forward">Forward</button>
+                            <button class="backward">Backward</button>
+                            <button class="sleep">Sleep</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>

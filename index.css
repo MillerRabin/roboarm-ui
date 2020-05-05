@@ -18,4 +18,35 @@ body {
 #Main #RotateBox {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#Main #RotateBox .buttons {
+    display: flex;
+}
+
+#Main #RotateBox .buttons > div {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+}
+
+#Main #RotateBox .buttons button {
+    font-size: 2.5rem;
+}
+
+#Main #RotateBox .controls {
+    display: flex;
+}
+
+#Main #RotateBox .console {
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 60%;
 }
