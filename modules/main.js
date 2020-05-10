@@ -1,7 +1,5 @@
 import roboarm from './roboarm.js';
 
-let gEngines = roboarm.getStartParameters();
-
 
 function initRotate(main) {
     async function rotate(target, event) {
@@ -11,9 +9,9 @@ function initRotate(main) {
         const rotate = roboarm.getValueFromRange(clientX, maxWidth);
         const upDown = roboarm.getValueFromRange(clientY, maxHeight);
         const iupDown = roboarm.inverse(upDown);
-        gEngines.rotate = rotate;
-        gEngines.up = iupDown;
-        await roboarm.set(gEngines);
+        roboarm.engines.rotate = rotate;
+        roboarm.engines.up = iupDown;
+        await roboarm.set(roboarm.engines);
     }
 
     const rotateBox = main.querySelector('#RotateBox');
@@ -30,7 +28,6 @@ function initRotate(main) {
     });
 }
 
-
 function initForwardBackWard(main) {
     const rotateBox = main.querySelector('#RotateBox');
     const { min, max } = roboarm.getBounds();
@@ -40,8 +37,8 @@ function initForwardBackWard(main) {
         current += deltaY;
         if (current < min) current = min;
         if (current > max) current = max;
-        gEngines.forward = current;
-        await roboarm.set(gEngines);
+        roboarm.engines.forward = current;
+        await roboarm.set(roboarm.engines);
     });
 }
 
@@ -49,78 +46,28 @@ function initKeep(main) {
     const rotateBox = main.querySelector('#RotateBox');
     rotateBox.addEventListener('mousedown', async function (event) {
         if (event.target != this) return;
-        gEngines.hold = roboarm.hold;
-        await roboarm.set(gEngines);
+        const release = (roboarm.engines.hold == roboarm.hold) ? roboarm.release : roboarm.hold;
+        await roboarm.set({ hold: release });
     });
-    rotateBox.addEventListener('mouseup', async function (event) {
+
+    /*rotateBox.addEventListener('mouseup', async function (event) {
         if (event.target != this) return;
-        gEngines.hold = roboarm.release;
-        await roboarm.set(gEngines);
-    });
-}
-
-function wait(ms) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            return resolve()
-        }, ms)
-    });
-}
-
-function deadZone(val) {
-    const threshold = 10;
-    const hLimit = 180 - threshold;
-    if (val > hLimit) return hLimit;
-    if (val < threshold) return threshold;
-    return val;
-}
-
-function alleviate(sStart, sEnd, dStart, dEnd) {
-    const delta = Math.abs(dEnd - dStart);
-    const mPath = Math.trunc((sEnd - sStart) / 2);
-    const maxDelta = 60
-    if (delta < maxDelta) return deadZone(sStart);
-    const finish = sStart + mPath;
-    return deadZone(finish);
-}
-
-
-async function command({ rotate = gEngines.rotate,
-                   up = gEngines.up,
-                   fwd = gEngines.fwd,
-                   hold = gEngines.hold
-                 }) {
-    /*const nUp = alleviate(gEngines.up, up, gEngines.fwd, fwd);
-    const nFwd = alleviate(gEngines.fwd, fwd, gEngines.up, up);*/
-    const nUp = deadZone(gEngines.up);
-    const nFwd = deadZone(gEngines.fwd);
-    if ((nUp != gEngines.up) || (nFwd != gEngines.fwd)) {
-        gEngines.up = nUp;
-        gEngines.fwd = nFwd;
-        await roboarm.set(gEngines);
-        await wait(200);
-    }
-
-    gEngines.rotate = rotate;
-    gEngines.up = up;
-    gEngines.fwd = fwd;
-    gEngines.hold = hold;
-    await roboarm.set(gEngines);
-    await wait(300);
+        await roboarm.set({ hold: roboarm.release });
+    });*/
 }
 
 function initButtons(main) {
     function update() {
-        horz.value = gEngines.rotate;
-        vert.value = gEngines.up;
-        fwd.value = gEngines.fwd;
+        horz.value = roboarm.engines.rotate;
+        vert.value = roboarm.engines.up;
+        fwd.value = roboarm.engines.fwd;
     }
 
     async function set() {
-        gEngines.rotate = horz.value;
-        gEngines.up = vert.value;
-        gEngines.fwd = fwd.value;
-        await roboarm.set(gEngines);
+        roboarm.engines.rotate = horz.value;
+        roboarm.engines.up = vert.value;
+        roboarm.engines.fwd = fwd.value;
+        await roboarm.set(roboarm.engines);
     }
 
     const left = main.querySelector('.buttons .left');
@@ -144,27 +91,27 @@ function initButtons(main) {
     update();
 
     left.onclick = async () => {
-        await command({ rotate: 0 });
+        await roboarm.set({ rotate: 0 });
         update();
     };
 
     right.onclick = async () => {
-        await command({ rotate: 180 });
+        await roboarm.set({ rotate: 180 });
         update();
     };
 
     center.onclick = async () => {
-        await command({ rotate: 90 });
+        await roboarm.set({ rotate: 90 });
         update();
     };
 
     topVert.onclick = async () => {
-        await command({ up: 70, fwd: 170 });
+        await roboarm.set({ up: 70, fwd: 170 });
         update();
     };
 
     bottom.onclick = async () => {
-        await command({ up: 180, fwd: 50 });
+        await roboarm.set({ up: 180, fwd: 50 });
         update();
     };
 
@@ -179,12 +126,12 @@ function initButtons(main) {
     };
 
     sleep.onclick = async () => {
-        await command({ up: 0, fwd: 158 });
+        await roboarm.set({ up: 0, fwd: 158 });
         update();
     };
 
     topHorz.onclick = async () => {
-        await command({ up: 0, fwd: 90 });
+        await roboarm.set({ up: 0, fwd: 90 });
         update();
     };
 }
