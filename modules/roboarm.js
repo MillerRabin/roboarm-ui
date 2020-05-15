@@ -1,4 +1,4 @@
-const endpoint = 'http://192.168.0.27';
+const endpoint = 'http://192.168.0.24';
 
 const fwdTable = [
     [[50, 100], [110, 180]],  //0
@@ -28,13 +28,13 @@ const vertTable = [
     [[90, 100]],              //20
     [[60, 100]],              //30
     [[60, 100], [150, 180]],  //40
-    [[50, 80], [150, 180]],   //50
+    [[85, 180]],              //50
     [[45, 180]],  //60
     [[40, 180]],  //70
     [[30, 180]],  //80
     [[0, 20], [30, 180]],  //90
-    [[0, 20], [30, 180]],   //100
-    [[0, 20], [30, 180]],   //110
+    [[30, 180]],   //100
+    [[0, 180]],   //110
     [[0, 180]],   //120
     [[0, 180]],   //130
     [[0, 180]],   //140
@@ -55,6 +55,9 @@ function wait(ms) {
 const gEngines = getStartParameters();
 
 function findEntry(entries, current) {
+    if (isNaN(current)) throw new Error('value is NaN');
+    if ((current < 0) || (current > 180)) throw new Error('value out of range');
+
     let cEntry = entries[0];
     let gCurVal = null;
 
@@ -74,8 +77,6 @@ function findEntry(entries, current) {
 }
 
 function getAvailableDelta(table, current, value) {
-    if (isNaN(value)) throw new Error('value is NaN');
-    if ((value < 0) || (value > 180)) throw new Error('value out of range');
     const index = Math.trunc(current / 10);
     const entries = table[index];
     if (entries == null) throw new Error('Out of bounds');
@@ -113,44 +114,137 @@ function getAvailableValues(table, source, target) {
 }
 
 function adjustValue(table, source, target, value) {
-    const values = getAvailableValues(table, source, target);
-    if (values.length == 0) throw new Error('The target is no available');
-    let cMin = null;
-    let currentVal = null;
-    for (const tValue of values) {
+    function checkMin(tValue) {
         const tMin = Math.abs(tValue - value);
         if ((currentVal == null) || (tMin < cMin)) {
             cMin = tMin;
             currentVal = tValue;
         }
     }
+
+    function forward() {
+        for (let i = 0; i < values.length; i++)
+            checkMin(values[i]);
+    }
+
+    function backward() {
+        for (let i = values.length - 1; i >= 0 ; i--)
+            checkMin(values[i]);
+    }
+
+    const values = getAvailableValues(table, source, target);
+    if (values.length == 0) throw new Error('The target is no available');
+    let cMin = null;
+    let currentVal = null;
+    if (source > target)
+        backward();
+    else
+        forward();
+
     return currentVal;
 }
 
-async function set({ rotate = gEngines.rotate,
-                     up = gEngines.up,
-                     fwd = gEngines.fwd,
-                     hold = gEngines.hold
-}) {
+function isNeedToMove({ rotate, up, fwd, hold, index }) {
+    return ((index == 0) ||
+            (gEngines.rotate != rotate) ||
+            (gEngines.up != up) ||
+            (gEngines.fwd != fwd) ||
+            (gEngines.hold != hold));
+
+}
+
+
+async function setUp({ rotate = gEngines.rotate,
+                       up = gEngines.up,
+                       fwd = gEngines.fwd,
+                       hold = gEngines.hold
+                   }) {
     let cUp = gEngines.up;
     let cFwd = gEngines.fwd;
+    let targetUp = up;
+    let targetFwd = fwd;
 
     for (let i = 0; i < 7; i++) {
         const fwdEntry = getAvailableDelta(fwdTable, cUp, cFwd);
+        cFwd = getNearestValue(fwdEntry, targetFwd);
         const upEntry = getAvailableDelta(vertTable, cFwd, cUp);
-        cUp = getNearestValue(upEntry, up);
-        cFwd = getNearestValue(fwdEntry, fwd);
-        if (cFwd != fwd)
-            cUp = adjustValue(fwdTable, cFwd, fwd, cUp);
-        if (cUp != up)
-            cFwd = adjustValue(vertTable, cUp, up, cFwd);
+        cUp = getNearestValue(upEntry, targetUp);
 
+        if (cUp != up) {
+            cFwd = adjustValue(vertTable, cUp, up, cFwd);
+            const upEntry = getAvailableDelta(vertTable, cFwd, cUp);
+            cUp = getNearestValue(upEntry, targetUp);
+        }
+
+        if (!isNeedToMove({rotate, up, fwd, hold, index: i})) {
+            console.log('false')
+            continue;
+        }
         await send({ rotate, up: cUp, fwd: cFwd, hold });
-        await wait(300);
-        if ((cUp == up) && (cFwd == fwd))
-            break;
+        await wait(200);
+        if ((cUp == targetUp) && (cFwd == targetFwd)) {
+            return true;
+        }
     }
-    return gEngines;
+    return false;
+}
+
+async function setFwd({ rotate = gEngines.rotate,
+                         up = gEngines.up,
+                         fwd = gEngines.fwd,
+                         hold = gEngines.hold
+                     }) {
+
+    let cUp = gEngines.up;
+    let cFwd = gEngines.fwd;
+    let targetUp = up;
+    let targetFwd = fwd;
+
+    for (let i = 0; i < 7; i++) {
+        const upEntry = getAvailableDelta(vertTable, cFwd, cUp);
+        cUp = getNearestValue(upEntry, targetUp);
+        const fwdEntry = getAvailableDelta(fwdTable, cUp, cFwd);
+        cFwd = getNearestValue(fwdEntry, targetFwd);
+
+        if (cFwd != fwd) {
+            cUp = adjustValue(fwdTable, cFwd, fwd, cUp);
+            const fwdEntry = getAvailableDelta(fwdTable, cUp, cFwd);
+            cFwd = getNearestValue(fwdEntry, targetFwd);
+        }
+
+        if (!isNeedToMove({rotate, up, fwd, hold, index: i})) continue;
+        await send({ rotate, up: cUp, fwd: cFwd, hold });
+        await wait(200);
+        if ((cUp == targetUp) && (cFwd == targetFwd)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+let busy = false;
+async function set({ rotate = gEngines.rotate,
+                     up = gEngines.up,
+                     fwd = gEngines.fwd,
+                     hold = gEngines.hold,
+                     masterEngine
+}) {
+    if (busy) return;
+    try {
+        busy = true;
+        if (masterEngine == 'up')
+            return await setUp({ rotate, up, fwd, hold });
+        if (masterEngine == 'fwd')
+            return await setFwd({ rotate, up, fwd, hold });
+
+        const res = await setUp({ rotate, up, fwd, hold });
+        if (res) return gEngines;
+        return await setFwd({ rotate, up, fwd, hold });
+
+    } finally {
+        busy = false;
+    }
+
 }
 
 async function send({ rotate, up, fwd, hold }) {
@@ -181,6 +275,7 @@ function getStartParameters() {
 export default {
     engines: gEngines,
     set,
+    send,
     hold: 30,
     release: 0
 }

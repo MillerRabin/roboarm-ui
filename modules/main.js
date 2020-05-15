@@ -49,25 +49,38 @@ function initKeep(main) {
         const release = (roboarm.engines.hold == roboarm.hold) ? roboarm.release : roboarm.hold;
         await roboarm.set({ hold: release });
     });
-
-    /*rotateBox.addEventListener('mouseup', async function (event) {
-        if (event.target != this) return;
-        await roboarm.set({ hold: roboarm.release });
-    });*/
 }
 
 function initButtons(main) {
+    let gTimeout = null;
     function update() {
-        horz.value = roboarm.engines.rotate;
-        vert.value = roboarm.engines.up;
-        fwd.value = roboarm.engines.fwd;
+        if (gTimeout != null) clearTimeout(gTimeout);
+        gTimeout = setTimeout(function () {
+            horz.value = roboarm.engines.rotate;
+            vert.value = roboarm.engines.up;
+            fwd.value = roboarm.engines.fwd;
+            gTimeout = null;
+        }, 500);
     }
 
-    async function set() {
-        roboarm.engines.rotate = horz.value;
-        roboarm.engines.up = vert.value;
-        roboarm.engines.fwd = fwd.value;
-        await roboarm.set(roboarm.engines);
+    async function setHorz() {
+        await roboarm.set({
+            rotate: Number(horz.value),
+            up: Number(vert.value),
+            fwd: Number(fwd.value),
+            masterEngine: 'fwd'
+        });
+        update();
+    }
+
+    async function setVert() {
+        await roboarm.set({
+            rotate: Number(horz.value),
+            up: Number(vert.value),
+            fwd: Number(fwd.value),
+            masterEngine: 'up'
+        });
+        update();
     }
 
     const left = main.querySelector('.buttons .left');
@@ -84,9 +97,9 @@ function initButtons(main) {
     const vert = main.querySelector('.inputs .vert');
     const fwd = main.querySelector('.inputs .fwd');
 
-    horz.onchange = set;
-    vert.onchange = set;
-    fwd.onchange = set;
+    horz.onchange = setHorz;
+    vert.onchange = setVert;
+    fwd.onchange = setHorz;
 
     update();
 
@@ -126,7 +139,7 @@ function initButtons(main) {
     };
 
     sleep.onclick = async () => {
-        await roboarm.set({ up: 0, fwd: 158 });
+        await roboarm.set({ up: 0, fwd: 158, masterEngine: 'fwd' });
         update();
     };
 
